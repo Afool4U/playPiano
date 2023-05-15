@@ -10,6 +10,7 @@ import os
 from os import environ
 from collections import OrderedDict
 import threading
+import concurrent.futures
 
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import pygame
@@ -20,7 +21,7 @@ class PlayPiano(threading.Thread):
     # 设置成类变量，保证所有实例共享同一个音频播放器
     pygame.mixer.init()
     pygame.init()
-    pygame.mixer.set_num_channels(1000)
+    pygame.mixer.set_num_channels(1024)
     sounds = {}  # 音频缓存
     pitchs = ('_', '▁', '▂', '▃', '▄', '▅', '▆', '▇')  # 音高符号
     for i in range(1, 8):
@@ -42,20 +43,26 @@ class PlayPiano(threading.Thread):
         return self
 
     def play(self):
-        for notes in self.notes:
-            for note in notes:
-                if self.ended:
-                    return
-                note = (note[1:] + note[0]).replace('+', 'h').replace('-', 'l')
-                if len(note) == 1:
-                    note = 'm' + note
-                self.sounds[note].play()
-                if self.notes_visible:
-                    print(self.pitchs[int(note[-1])], end=' ')
-                time.sleep(self.times / 1000)
+        def play_note(note):
+            if self.ended:
+                return
+            note = (note[1:] + note[0]).replace('+', 'h').replace('-', 'l')
+            if len(note) == 1:
+                note = 'm' + note
+            self.sounds[note].play()
             if self.notes_visible:
-                print()
-        self.ended = 1
+                print(self.pitchs[int(note[-1])], end=' ')
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1024) as executor:
+            for notes in self.notes:
+                for note in notes:
+                    executor.submit(play_note, note)
+                    time.sleep(self.times / 1000)
+                    if self.ended:
+                        return
+                if self.notes_visible:
+                    print()
+            self.ended = 1
 
     def stop(self):
         self.ended = 1
@@ -75,7 +82,7 @@ class Notes:
         times = int(file[file.find('_') + 1:file.rfind('.')])
         with open(file_path, 'r') as f:
             notes = f.readlines()
-        notes = [note.split() for note in notes if '//' not in note]
+        notes = [note.split('//')[0].split() for note in notes]
         if self.notes.get(title) is None:
             self.notes[title] = {}
         self.notes[title][suffix] = notes
