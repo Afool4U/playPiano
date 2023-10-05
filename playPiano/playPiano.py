@@ -26,10 +26,10 @@ class PlayPiano(threading.Thread):
     pitchs = ('_', '▁', '▂', '▃', '▄', '▅', '▆', '▇')  # 音高符号
     for i in range(1, 8):
         for j in ['m', 'h', 'l']:
-            sounds[j + str(i)] = pygame.mixer.Sound('resources\\audio\\' + j + str(i) + '.mp3')
+            sounds[j + str(i)] = pygame.mixer.Sound('resources/audio/' + j + str(i) + '.mp3')
             if j != 'm':
-                sounds[2 * j + str(i)] = pygame.mixer.Sound('resources\\audio\\' + 2 * j + str(i) + '.mp3')
-    sounds['m0'] = pygame.mixer.Sound('resources\\audio\\m0.mp3')  # 休止符
+                sounds[2 * j + str(i)] = pygame.mixer.Sound('resources/audio/' + 2 * j + str(i) + '.mp3')
+    sounds['m0'] = pygame.mixer.Sound('resources/audio/m0.mp3')  # 休止符
 
     def __init__(self, times, notes_visible=False):
         super().__init__(target=self.play)
@@ -80,7 +80,7 @@ class Notes:
         suffix = file.split('.')[1]
         title = file.split('_')[0]
         times = int(file[file.find('_') + 1:file.rfind('.')])
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r',encoding='gbk') as f:
             notes = f.readlines()
         notes = [note.split('//')[0].split() for note in notes]
         if self.notes.get(title) is None:
